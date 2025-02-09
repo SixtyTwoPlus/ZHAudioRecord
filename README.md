@@ -2,6 +2,9 @@
 
 Simple audio recording with audio spectrum, similar to WeChat
 
+## Install
+`pod 'ZHAudioRecord`
+
 ## How to use
 ```objective-c
 
