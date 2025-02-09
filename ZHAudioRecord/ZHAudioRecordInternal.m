@@ -17,8 +17,10 @@
 @interface ZHAudioRecord()<AVAudioRecorderDelegate>
 
 @property (nonatomic,strong) AVAudioRecorder            *recorder;
+
 @property (nonatomic,strong) AVAudioEngine              *engine;
-@property (nonatomic, strong) AVAudioInputNode          *inputNode;
+@property (nonatomic,strong) AVAudioInputNode           *inputNode;
+@property (nonatomic,strong) AVAudioFile                *audioFile;
 
 @property (nonatomic) dispatch_source_t                 timer;
 @property (nonatomic,assign) NSInteger                  recordTime;
@@ -119,6 +121,7 @@
         [self.recorder stop];
     }else{
         [self.engine stop];
+        [self finishRecordWithFilePath:self.audioFile.url.path];
     }
     [self.displayView dismiss];
     [self stopTimer];
@@ -154,20 +157,31 @@
     AVAudioFormat *format = [self.inputNode inputFormatForBus:0];
     [self.inputNode installTapOnBus:0 bufferSize:1024 format:format block:^(AVAudioPCMBuffer * _Nonnull buffer, AVAudioTime * _Nonnull when) {
         NSArray *bands = [self processAudioBuffer:buffer];
+        [weakSelf.audioFile writeFromBuffer:buffer error:nil];
         dispatch_async(dispatch_get_main_queue(), ^{
             [weakSelf.displayView setFrequencyBands:bands];
         });
     }];
     
     NSError *error = nil;
+    self.audioFile = [[AVAudioFile alloc] initForWriting:[NSURL fileURLWithPath:filePath] settings:settings error:&error];
+    if (error) {
+        [[AVAudioSession sharedInstance] setActive:NO error:nil];
+        if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didErrored:)]) {
+            [self.delegate audioRecord:self didErrored:error];
+        }
+        return NO;
+    }
     [self.engine startAndReturnError:&error];
     if (error) {
         [[AVAudioSession sharedInstance] setActive:NO error:nil];
+        if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didErrored:)]) {
+            [self.delegate audioRecord:self didErrored:error];
+        }
         return NO;
     }
     return YES;
 }
-
 
 
 #pragma mark - timer
@@ -213,6 +227,25 @@
 }
 
 #pragma mark - privacy methods
+
+- (void)finishRecordWithFilePath:(NSString *)filePath{
+    if ((self.recordTime / 10) < self.minRecordSec) {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+            [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
+        }
+        if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didErrored:)]) {
+            [self.delegate audioRecord:self didErrored:[NSError errorWithDomain:@"The recording duration is too short" code:999 userInfo:nil]];
+        }
+        return;
+    }
+    ZHRecordFinishStatus status = [[NSFileManager defaultManager] fileExistsAtPath:filePath] ? ZHRecordFinishStatusSuccess : ZHRecordFinishStatusFailed;
+    if (status == ZHRecordFinishStatusSuccess) {
+        status = self.displayView.isCancel ? ZHRecordFinishStatusCancel : ZHRecordFinishStatusSuccess;
+    }
+    if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didFinishRecordWithUrlPath:duration:status:)]) {
+        [self.delegate audioRecord:self didFinishRecordWithUrlPath:filePath duration:(self.recordTime / 10) status:status];
+    }
+}
 
 - (NSArray <NSNumber *> *)processAudioBuffer:(AVAudioPCMBuffer *)buffer {
     float *audioData = buffer.floatChannelData[0];
@@ -303,22 +336,7 @@
 #pragma mark - AVAudioRecorderDelegate
 
 - (void)audioRecorderDidFinishRecording:(AVAudioRecorder *)recorder successfully:(BOOL)flag{
-    if ((self.recordTime / 10) < self.minRecordSec) {
-        if ([[NSFileManager defaultManager] fileExistsAtPath:recorder.url.path]) {
-            [[NSFileManager defaultManager] removeItemAtPath:recorder.url.path error:nil];
-        }
-        if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didErrored:)]) {
-            [self.delegate audioRecord:self didErrored:[NSError errorWithDomain:@"The recording duration is too short" code:999 userInfo:nil]];
-        }
-        return;
-    }
-    ZHRecordFinishStatus status = [[NSFileManager defaultManager] fileExistsAtPath:recorder.url.path] ? ZHRecordFinishStatusSuccess : ZHRecordFinishStatusFailed;
-    if (status == ZHRecordFinishStatusSuccess) {
-        status = self.displayView.isCancel ? ZHRecordFinishStatusCancel : ZHRecordFinishStatusSuccess;
-    }
-    if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didFinishRecordWithUrlPath:duration:status:)]) {
-        [self.delegate audioRecord:self didFinishRecordWithUrlPath:recorder.url.path duration:(self.recordTime / 10.0) status:status];
-    }
+    [self finishRecordWithFilePath:recorder.url.path];
 }
 
 #pragma mark - lazy
