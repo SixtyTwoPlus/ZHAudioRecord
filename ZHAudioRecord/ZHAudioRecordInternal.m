@@ -206,15 +206,6 @@
 #pragma mark - AVAudioRecorderDelegate
 
 - (void)audioRecorderDidFinishRecording:(AVAudioRecorder *)recorder successfully:(BOOL)flag{
-    if (self.recordTime / 10 < self.minRecordSec) {
-        if ([[NSFileManager defaultManager] fileExistsAtPath:recorder.url.path]) {
-            [[NSFileManager defaultManager] removeItemAtPath:recorder.url.path error:nil];
-        }
-        if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didErrored:)]) {
-            [self.delegate audioRecord:self didErrored:[NSError errorWithDomain:@"The current recording time is too short" code:999 userInfo:nil]];
-        }
-        return;
-    }
     ZHRecordFinishStatus status = [[NSFileManager defaultManager] fileExistsAtPath:recorder.url.path] ? ZHRecordFinishStatusSuccess : ZHRecordFinishStatusFailed;
     if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didFinishRecordWithUrlPath:status:)]) {
         [self.delegate audioRecord:self didFinishRecordWithUrlPath:recorder.url.path status:status];
