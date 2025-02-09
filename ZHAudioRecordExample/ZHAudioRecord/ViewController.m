@@ -12,6 +12,8 @@
 @interface ViewController ()<ZHAudioRecordDelegate>
 
 @property (nonatomic,strong) UIButton *button;
+@property (nonatomic,strong) UIButton *norlmalBtn;
+@property (nonatomic,strong) UIButton *engineBtn;
 
 @end
 
@@ -19,6 +21,44 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    __weak typeof(self) weakSelf = self;
+    
+    UIStackView *stackView = [UIStackView new];
+    stackView.axis = UILayoutConstraintAxisVertical;
+    stackView.distribution = UIStackViewDistributionEqualSpacing;
+    stackView.spacing = 6;
+    [self.view addSubview:stackView];
+    
+    UIButton *normalBtn = [UIButton new];
+    [normalBtn setTitle:@"AVAudioRecorder" forState:UIControlStateNormal];
+    [normalBtn setTitleColor:UIColor.redColor forState:UIControlStateNormal];
+    normalBtn.layer.cornerRadius = 8;
+    normalBtn.layer.masksToBounds = YES;
+    normalBtn.layer.borderWidth = 1;
+    normalBtn.layer.borderColor = UIColor.redColor.CGColor;
+    [normalBtn addAction:[UIAction actionWithHandler:^(__kindof UIAction * _Nonnull action) {
+        weakSelf.engineBtn.layer.borderWidth = 0;
+        weakSelf.norlmalBtn.layer.borderWidth = 1;
+        ZHAudioRecord.record.recordType = ZHAudioRecordTypeNormal;
+    }] forControlEvents:UIControlEventTouchUpInside];
+    self.norlmalBtn = normalBtn;
+    [stackView addArrangedSubview:normalBtn];
+    
+    UIButton *engineBtn = [UIButton new];
+    [engineBtn setTitle:@"AVAudioEngine" forState:UIControlStateNormal];
+    [engineBtn setTitleColor:UIColor.redColor forState:UIControlStateNormal];
+    engineBtn.layer.cornerRadius = 8;
+    engineBtn.layer.masksToBounds = YES;
+    engineBtn.layer.borderWidth = 0;
+    engineBtn.layer.borderColor = UIColor.redColor.CGColor;
+    [engineBtn addAction:[UIAction actionWithHandler:^(__kindof UIAction * _Nonnull action) {
+        weakSelf.engineBtn.layer.borderWidth = 1;
+        weakSelf.norlmalBtn.layer.borderWidth = 0;
+        ZHAudioRecord.record.recordType = ZHAudioRecordTypeEngine;
+    }] forControlEvents:UIControlEventTouchUpInside];
+    self.engineBtn = engineBtn;
+    [stackView addArrangedSubview:engineBtn];
     
     self.button = [UIButton new];
     [self.button setTitle:@"按住开始录音" forState:UIControlStateNormal];
@@ -34,6 +74,18 @@
         make.bottom.equalTo(self.view.mas_safeAreaLayoutGuideBottom).offset(-20);
         make.centerX.equalTo(self.view);
         make.size.mas_equalTo(CGSizeMake(200, 60));
+    }];
+    
+    [stackView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.center.equalTo(self.view);
+    }];
+    
+    [normalBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.size.mas_equalTo(CGSizeMake(200, 60));
+    }];
+    
+    [engineBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.size.mas_equalTo(normalBtn);
     }];
     
     ZHAudioRecord.record.delegate = self;

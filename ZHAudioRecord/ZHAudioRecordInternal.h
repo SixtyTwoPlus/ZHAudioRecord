@@ -18,6 +18,11 @@ typedef enum : NSUInteger {
     ZHRecordFinishStatusCancel,
 } ZHRecordFinishStatus;
 
+typedef enum : NSUInteger {
+    ZHAudioRecordTypeNormal,
+    ZHAudioRecordTypeEngine,
+} ZHAudioRecordType;
+
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol ZHAudioRecordDelegate <NSObject>
@@ -40,6 +45,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic,assign) NSInteger                                  maxRecordSec;
 //最小录制时长，默认2s
 @property (nonatomic,assign) NSInteger                                  minRecordSec;
+//录制方式，默认为normal AVRecorder
+@property (nonatomic,assign) ZHAudioRecordType                          recordType;
 
 - (BOOL)startRecordWithFilePath:(NSString *)filePath;
 

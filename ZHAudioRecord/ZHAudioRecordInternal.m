@@ -10,10 +10,16 @@
 #import "ZHAudioRecordInternal.h"
 #import "ZHDisplayView.h"
 #import <AVFoundation/AVFoundation.h>
+#import <Accelerate/Accelerate.h>
+
+#define FFT_SIZE 1024
 
 @interface ZHAudioRecord()<AVAudioRecorderDelegate>
 
 @property (nonatomic,strong) AVAudioRecorder            *recorder;
+@property (nonatomic,strong) AVAudioEngine              *engine;
+@property (nonatomic, strong) AVAudioInputNode          *inputNode;
+
 @property (nonatomic) dispatch_source_t                 timer;
 @property (nonatomic,assign) NSInteger                  recordTime;
 @property (nonatomic) dispatch_queue_t                  queue;
@@ -63,6 +69,7 @@
         _queue = dispatch_queue_create("com.treehole.recordQueue", DISPATCH_QUEUE_SERIAL);
         _maxRecordSec = 60;
         _minRecordSec = 2;
+        _recordType = ZHAudioRecordTypeNormal;
     }
     return self;
 }
@@ -91,6 +98,36 @@
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayAndRecord error:nil];
     [[AVAudioSession sharedInstance] setActive:YES error:nil];
     
+    if (self.recordType == ZHAudioRecordTypeNormal) {
+        BOOL record = [self setupRecorderWithFilePath:filePath settings:settings];
+        if (!record) {
+            [[AVAudioSession sharedInstance] setActive:NO error:nil];
+            return NO;
+        }
+    }else{
+        [self setupEngineWithFilePath:filePath settings:settings];
+    }
+    
+    [self startTimer];
+    [self.displayView show];
+    return YES;
+}
+
+- (void)stopRecord{
+    [[AVAudioSession sharedInstance] setActive:NO error:nil];
+    if (self.recordType == ZHAudioRecordTypeNormal) {
+        [self.recorder stop];
+    }else{
+        [self.engine stop];
+    }
+    [self.displayView dismiss];
+    [self stopTimer];
+}
+
+#pragma mark - setup
+
+
+- (BOOL)setupRecorderWithFilePath:(NSString *)filePath settings:(NSDictionary *)settings{
     NSError *error;
     self.recorder = [[AVAudioRecorder alloc]initWithURL:[NSURL fileURLWithPath:filePath]
                                                  settings:settings
@@ -99,27 +136,39 @@
         if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didErrored:)]) {
             [self.delegate audioRecord:self didErrored:error];
         }
-        [[AVAudioSession sharedInstance] setActive:NO error:nil];
         return NO;
     }
-    [self.displayView show];
     
     self.recorder.delegate = self;
     self.recorder.meteringEnabled = YES;
     [self.recorder prepareToRecord];
     [self.recorder record];
-    
-    [self startTimer];
     return YES;
 }
 
-- (void)stopRecord{
-    [[AVAudioSession sharedInstance] setActive:NO error:nil];
+- (BOOL)setupEngineWithFilePath:(NSString *)filePath settings:(NSDictionary *)settings{
+    __weak typeof(self) weakSelf = self;
+    self.engine = [[AVAudioEngine alloc] init];
+    self.inputNode = self.engine.inputNode;
     
-    [self.displayView dismiss];
-    [self.recorder stop];
-    [self stopTimer];
+    AVAudioFormat *format = [self.inputNode inputFormatForBus:0];
+    [self.inputNode installTapOnBus:0 bufferSize:1024 format:format block:^(AVAudioPCMBuffer * _Nonnull buffer, AVAudioTime * _Nonnull when) {
+        NSArray *bands = [self processAudioBuffer:buffer];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [weakSelf.displayView setFrequencyBands:bands];
+        });
+    }];
+    
+    NSError *error = nil;
+    [self.engine startAndReturnError:&error];
+    if (error) {
+        [[AVAudioSession sharedInstance] setActive:NO error:nil];
+        return NO;
+    }
+    return YES;
 }
+
+
 
 #pragma mark - timer
 
@@ -136,15 +185,18 @@
             [weakSelf stopRecord];
             return;
         }
-        [weakSelf.recorder updateMeters];
-        float averagePower = [weakSelf.recorder averagePowerForChannel:0];
-        //设置
-        float minDB = -60.0;
-        float normalized = (averagePower < minDB) ? 0 : (averagePower - minDB) / (-minDB);
-        NSArray *bands = [weakSelf generateFrequencyBandsWithAvgPower:normalized];
-        
+        if (weakSelf.recordType == ZHAudioRecordTypeNormal) {
+            [weakSelf.recorder updateMeters];
+            float averagePower = [weakSelf.recorder averagePowerForChannel:0];
+            //设置
+            float minDB = -60.0;
+            float normalized = (averagePower < minDB) ? 0 : (averagePower - minDB) / (-minDB);
+            NSArray *bands = [weakSelf generateFrequencyBandsWithAvgPower:normalized];
+            dispatch_sync(dispatch_get_main_queue(), ^{
+                [weakSelf.displayView setFrequencyBands:bands];
+            });
+        }
         dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf.displayView setFrequencyBands:bands];
             [weakSelf.displayView setRecordTime:(weakSelf.recordTime / 10)];
         });
     });
@@ -161,6 +213,56 @@
 }
 
 #pragma mark - privacy methods
+
+- (NSArray <NSNumber *> *)processAudioBuffer:(AVAudioPCMBuffer *)buffer {
+    float *audioData = buffer.floatChannelData[0];
+    UInt32 frameLength = buffer.frameLength;
+            
+    // 对音频数据进行 FFT 或其他频谱分析
+    NSArray *spectrum = [self performFFTOnAudioData:audioData frameLength:frameLength];
+    return spectrum;
+}
+
+- (NSArray *)performFFTOnAudioData:(float *)audioData frameLength:(UInt32)frameLength {
+    // 设置 FFT 参数
+    UInt32 log2n = log2f(frameLength);
+    UInt32 n = 1 << log2n;
+    FFTSetup fftSetup = vDSP_create_fftsetup(log2n, kFFTRadix2);
+    
+    // 分配内存
+    float *realp = (float *)malloc(n / 2 * sizeof(float));
+    float *imagp = (float *)malloc(n / 2 * sizeof(float));
+    DSPSplitComplex splitComplex = {realp, imagp};
+    
+    // 将音频数据转换为复数格式
+    vDSP_ctoz((DSPComplex *)audioData, 2, &splitComplex, 1, n / 2);
+    
+    // 执行 FFT
+    vDSP_fft_zrip(fftSetup, &splitComplex, 1, log2n, FFT_FORWARD);
+    
+    // 计算幅度
+    float *magnitudes = (float *)malloc(n / 2 * sizeof(float));
+    vDSP_zvmags(&splitComplex, 1, magnitudes, 1, n / 2);
+    
+    // 归一化幅度
+    float normalizedMagnitudes[FFT_SIZE / 2];
+    vDSP_vsmul(magnitudes, 1, &(float){2.0f / FFT_SIZE}, normalizedMagnitudes, 1, FFT_SIZE / 2);
+    
+    // 转换为 NSArray
+    NSMutableArray *spectrum = [NSMutableArray arrayWithCapacity:n / 2];
+    for (UInt32 i = 0; i < n / 2; i++) {
+        [spectrum addObject:@(normalizedMagnitudes[i])];
+    }
+    
+    // 释放内存
+    free(realp);
+    free(imagp);
+    free(magnitudes);
+    vDSP_destroy_fftsetup(fftSetup);
+    
+    return spectrum;
+}
+
 
 - (NSArray <NSNumber *> *)generateFrequencyBandsWithAvgPower:(float)averagePower{
     NSMutableArray *bands = [NSMutableArray arrayWithCapacity:self.displayView.bandCount];
