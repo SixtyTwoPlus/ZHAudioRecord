@@ -121,6 +121,8 @@
 
 - (void)show{
     _isCancel = NO;
+    self.spectrumViewBg.image = [UIImage imageNamed:@"zh_record_wave_bg"];
+    
     self.frame = CGRectMake(0, 0, ZHRECORD_WIDTH, ZHRECORD_HEIGHT);
     [UIApplication.sharedApplication.delegate.window addSubview:self];
     
