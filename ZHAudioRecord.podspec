@@ -22,5 +22,5 @@ Pod::Spec.new do |s|
   s.source_files = 'ZHAudioRecord/*'
   s.frameworks   = 'Foundation', 'UIKit' , 'AVFoundation'
   s.requires_arc = true
-  s.dependency.  = 'Masonry'
+  s.dependency	'Masonry'
 end
