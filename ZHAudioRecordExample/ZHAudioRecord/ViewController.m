@@ -42,7 +42,7 @@
 #pragma mark - action
 
 - (void)gestureAction:(UILongPressGestureRecognizer *)gesture{
-    NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"123"];
+    NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"example"];
     
     CGPoint point = [gesture locationInView:self.view];
     [ZHAudioRecord.record.displayView upgradeGesturePoint:point];
