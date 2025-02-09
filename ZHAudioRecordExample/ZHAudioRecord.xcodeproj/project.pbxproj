@@ -18,6 +18,7 @@
 		48A7DA862D57AEC00043DF89 /* ZHAudioRecordInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 48A7DA7D2D57AEC00043DF89 /* ZHAudioRecordInternal.m */; };
 		48A7DA872D57AEC00043DF89 /* ZHSpectrumView.m in Sources */ = {isa = PBXBuildFile; fileRef = 48A7DA832D57AEC00043DF89 /* ZHSpectrumView.m */; };
 		48A7DA882D57AEC00043DF89 /* ZHCurveView.m in Sources */ = {isa = PBXBuildFile; fileRef = 48A7DA7F2D57AEC00043DF89 /* ZHCurveView.m */; };
+		48DF72162D5916DE00B3CBA5 /* ZHSpeechManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 48DF72152D5916DE00B3CBA5 /* ZHSpeechManager.m */; };
 		B43469396E719D8A6B1793F5 /* libPods-ZHAudioRecord.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A246C7A9CA94CF005889E01D /* libPods-ZHAudioRecord.a */; };
 /* End PBXBuildFile section */
 
@@ -45,6 +46,8 @@
 		48A7DA8A2D57AEE80043DF89 /* ZHAudioRecord.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZHAudioRecord.h; sourceTree = "<group>"; };
 		48A7DA8B2D57B07D0043DF89 /* ZHDisplayViewProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZHDisplayViewProtocol.h; sourceTree = "<group>"; };
 		48A7DA8C2D57B3BB0043DF89 /* ZHAudioRecordMarco.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZHAudioRecordMarco.h; sourceTree = "<group>"; };
+		48DF72142D5916DE00B3CBA5 /* ZHSpeechManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZHSpeechManager.h; sourceTree = "<group>"; };
+		48DF72152D5916DE00B3CBA5 /* ZHSpeechManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ZHSpeechManager.m; sourceTree = "<group>"; };
 		9C80E2E7105D5F2B72869766 /* Pods-ZHAudioRecord.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZHAudioRecord.release.xcconfig"; path = "Target Support Files/Pods-ZHAudioRecord/Pods-ZHAudioRecord.release.xcconfig"; sourceTree = "<group>"; };
 		A246C7A9CA94CF005889E01D /* libPods-ZHAudioRecord.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ZHAudioRecord.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -102,6 +105,8 @@
 				48A7DA8A2D57AEE80043DF89 /* ZHAudioRecord.h */,
 				48A7DA7C2D57AEC00043DF89 /* ZHAudioRecordInternal.h */,
 				48A7DA7D2D57AEC00043DF89 /* ZHAudioRecordInternal.m */,
+				48DF72142D5916DE00B3CBA5 /* ZHSpeechManager.h */,
+				48DF72152D5916DE00B3CBA5 /* ZHSpeechManager.m */,
 				48A7DA8C2D57B3BB0043DF89 /* ZHAudioRecordMarco.h */,
 				48A7DA8B2D57B07D0043DF89 /* ZHDisplayViewProtocol.h */,
 				48A7DA802D57AEC00043DF89 /* ZHDisplayView.h */,
@@ -232,6 +237,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				48A7DA6C2D57AB9F0043DF89 /* AppDelegate.m in Sources */,
+				48DF72162D5916DE00B3CBA5 /* ZHSpeechManager.m in Sources */,
 				48A7DA852D57AEC00043DF89 /* ZHDisplayView.m in Sources */,
 				48A7DA862D57AEC00043DF89 /* ZHAudioRecordInternal.m in Sources */,
 				48A7DA872D57AEC00043DF89 /* ZHSpectrumView.m in Sources */,

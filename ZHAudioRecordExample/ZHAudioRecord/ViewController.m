@@ -89,6 +89,7 @@
     }];
     
     ZHAudioRecord.record.delegate = self;
+    [ZHAudioRecord.record needReconizeWithLocal:[NSLocale localeWithLocaleIdentifier:@"zh_CN"]];
 }
 
 #pragma mark - action

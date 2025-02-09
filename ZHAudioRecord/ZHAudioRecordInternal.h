@@ -52,6 +52,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (BOOL)startRecordWithFilePath:(NSString *)filePath settings:(NSDictionary * _Nullable)settings;
 
+- (void)needReconizeWithLocal:(NSLocale * _Nullable)local;
+
 - (void)stopRecord;
 
 + (instancetype)new NS_UNAVAILABLE;

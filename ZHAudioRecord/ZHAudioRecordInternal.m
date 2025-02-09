@@ -9,18 +9,20 @@
 
 #import "ZHAudioRecordInternal.h"
 #import "ZHDisplayView.h"
+#import "ZHSpeechManager.h"
 #import <AVFoundation/AVFoundation.h>
 #import <Accelerate/Accelerate.h>
 
 #define FFT_SIZE 1024
 
-@interface ZHAudioRecord()<AVAudioRecorderDelegate>
+@interface ZHAudioRecord()<AVAudioRecorderDelegate,ZHSpeechManagerDelegate>
 
 @property (nonatomic,strong) AVAudioRecorder            *recorder;
 
 @property (nonatomic,strong) AVAudioEngine              *engine;
 @property (nonatomic,strong) AVAudioInputNode           *inputNode;
 @property (nonatomic,strong) AVAudioFile                *audioFile;
+@property (nonatomic,strong) ZHSpeechManager            *speech;
 
 @property (nonatomic) dispatch_source_t                 timer;
 @property (nonatomic,assign) NSInteger                  recordTime;
@@ -72,6 +74,8 @@
         _maxRecordSec = 60;
         _minRecordSec = 2;
         _recordType = ZHAudioRecordTypeNormal;
+        _speech = [ZHSpeechManager new];
+        _speech.delegate = self;
     }
     return self;
 }
@@ -121,14 +125,22 @@
         [self.recorder stop];
     }else{
         [self.engine stop];
+        [self.speech stopRecognize];
         [self finishRecordWithFilePath:self.audioFile.url.path];
     }
     [self.displayView dismiss];
     [self stopTimer];
 }
 
-#pragma mark - setup
+- (void)needReconizeWithLocal:(NSLocale *)local{
+    if (!local) {
+        local = [NSLocale currentLocale];
+    }
+    self.recordType = ZHAudioRecordTypeEngine;
+    [self.speech setupSpeechWithLocal:local];
+}
 
+#pragma mark - setup
 
 - (BOOL)setupRecorderWithFilePath:(NSString *)filePath settings:(NSDictionary *)settings{
     NSError *error;
@@ -158,6 +170,7 @@
     [self.inputNode installTapOnBus:0 bufferSize:1024 format:format block:^(AVAudioPCMBuffer * _Nonnull buffer, AVAudioTime * _Nonnull when) {
         NSArray *bands = [self processAudioBuffer:buffer];
         [weakSelf.audioFile writeFromBuffer:buffer error:nil];
+        [weakSelf.speech appendAudioData:buffer];
         dispatch_async(dispatch_get_main_queue(), ^{
             [weakSelf.displayView setFrequencyBands:bands];
         });
@@ -182,7 +195,6 @@
     }
     return YES;
 }
-
 
 #pragma mark - timer
 
@@ -283,7 +295,6 @@
     // 转换为 NSArray
     NSMutableArray *spectrum = [NSMutableArray arrayWithCapacity:FFT_SIZE / 2];
     for (UInt32 i = 0; i < FFT_SIZE / 2; i++) {
-        NSLog(@"%f",normalizedMagnitudes[i]);
         [spectrum addObject:@(normalizedMagnitudes[i])];
     }
     // 释放内存
@@ -338,6 +349,14 @@
 - (void)audioRecorderDidFinishRecording:(AVAudioRecorder *)recorder successfully:(BOOL)flag{
     [self finishRecordWithFilePath:recorder.url.path];
 }
+
+#pragma mark - ZHSpeechManagerDelegate
+
+- (void)speechManager:(ZHSpeechManager *)manager recognizingStr:(NSString *)str finish:(BOOL)finish{
+    
+    NSLog(@"%@",str);
+}
+
 
 #pragma mark - lazy
 
