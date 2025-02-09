@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "ZHAudioRecord"
-  s.version      = "0.0.2"
+  s.version      = "0.0.1"
   s.summary      = "Simple audio recording with audio spectrum, similar to WeChat"
   s.homepage     = "https://github.com/SixtyTwoPlus/ZHAudioRecord.git"
   s.license      = "MIT"
