@@ -120,6 +120,7 @@
 }
 
 - (void)show{
+    _isCancel = NO;
     self.frame = CGRectMake(0, 0, ZHRECORD_WIDTH, ZHRECORD_HEIGHT);
     [UIApplication.sharedApplication.delegate.window addSubview:self];
     
