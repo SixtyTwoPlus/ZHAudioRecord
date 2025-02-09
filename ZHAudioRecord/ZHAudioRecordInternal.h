@@ -33,7 +33,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)record;
 
-@property (nonatomic,assign,readonly) float                             averagePower;
 @property (nonatomic,weak) id <ZHAudioRecordDelegate>                   delegate;
 //开始录音默认遮罩
 @property (nonatomic,strong,nullable) UIView  <ZHDisplayViewProtocol>   *displayView;

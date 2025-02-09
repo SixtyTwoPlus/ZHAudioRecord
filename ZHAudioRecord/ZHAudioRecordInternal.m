@@ -18,8 +18,6 @@
 @property (nonatomic,assign) NSInteger                  recordTime;
 @property (nonatomic) dispatch_queue_t                  queue;
 
-@property (nonatomic,assign) float                      averagePower;
-
 @end
 
 @implementation ZHAudioRecord
@@ -140,7 +138,6 @@
         }
         [weakSelf.recorder updateMeters];
         float averagePower = [weakSelf.recorder averagePowerForChannel:0];
-        weakSelf.averagePower = averagePower;
         //设置
         float minDB = -60.0;
         float normalized = (averagePower < minDB) ? 0 : (averagePower - minDB) / (-minDB);
@@ -207,6 +204,9 @@
 
 - (void)audioRecorderDidFinishRecording:(AVAudioRecorder *)recorder successfully:(BOOL)flag{
     ZHRecordFinishStatus status = [[NSFileManager defaultManager] fileExistsAtPath:recorder.url.path] ? ZHRecordFinishStatusSuccess : ZHRecordFinishStatusFailed;
+    if (status == ZHRecordFinishStatusSuccess) {
+        status = self.displayView.isCancel ? ZHRecordFinishStatusCancel : ZHRecordFinishStatusSuccess;
+    }
     if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didFinishRecordWithUrlPath:status:)]) {
         [self.delegate audioRecord:self didFinishRecordWithUrlPath:recorder.url.path status:status];
     }
