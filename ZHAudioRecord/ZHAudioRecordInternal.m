@@ -224,40 +224,38 @@
 }
 
 - (NSArray *)performFFTOnAudioData:(float *)audioData frameLength:(UInt32)frameLength {
-    // 设置 FFT 参数
-    UInt32 log2n = log2f(frameLength);
-    UInt32 n = 1 << log2n;
-    FFTSetup fftSetup = vDSP_create_fftsetup(log2n, kFFTRadix2);
+    // 准备 FFT 输入和输出
+    DSPSplitComplex splitComplex;
+    splitComplex.realp = (float *)malloc(FFT_SIZE * sizeof(float));
+    splitComplex.imagp = (float *)malloc(FFT_SIZE * sizeof(float));
     
-    // 分配内存
-    float *realp = (float *)malloc(n / 2 * sizeof(float));
-    float *imagp = (float *)malloc(n / 2 * sizeof(float));
-    DSPSplitComplex splitComplex = {realp, imagp};
+    // 将音频数据复制到实部，虚部置零
+    vDSP_ctoz((DSPComplex *)audioData, 2, &splitComplex, 1, FFT_SIZE);
     
-    // 将音频数据转换为复数格式
-    vDSP_ctoz((DSPComplex *)audioData, 2, &splitComplex, 1, n / 2);
+    // 创建 FFT 设置
+    vDSP_Length log2n = log2f(FFT_SIZE);
+    FFTSetup fftSetup = vDSP_create_fftsetup(log2n, FFT_RADIX2);
     
     // 执行 FFT
     vDSP_fft_zrip(fftSetup, &splitComplex, 1, log2n, FFT_FORWARD);
     
     // 计算幅度
-    float *magnitudes = (float *)malloc(n / 2 * sizeof(float));
-    vDSP_zvmags(&splitComplex, 1, magnitudes, 1, n / 2);
+    float magnitudes[FFT_SIZE / 2];
+    vDSP_zvmags(&splitComplex, 1, magnitudes, 1, FFT_SIZE / 2);
     
     // 归一化幅度
     float normalizedMagnitudes[FFT_SIZE / 2];
     vDSP_vsmul(magnitudes, 1, &(float){2.0f / FFT_SIZE}, normalizedMagnitudes, 1, FFT_SIZE / 2);
     
     // 转换为 NSArray
-    NSMutableArray *spectrum = [NSMutableArray arrayWithCapacity:n / 2];
-    for (UInt32 i = 0; i < n / 2; i++) {
+    NSMutableArray *spectrum = [NSMutableArray arrayWithCapacity:FFT_SIZE / 2];
+    for (UInt32 i = 0; i < FFT_SIZE / 2; i++) {
+        NSLog(@"%f",normalizedMagnitudes[i]);
         [spectrum addObject:@(normalizedMagnitudes[i])];
     }
-    
     // 释放内存
-    free(realp);
-    free(imagp);
-    free(magnitudes);
+    free(splitComplex.realp);
+    free(splitComplex.imagp);
     vDSP_destroy_fftsetup(fftSetup);
     
     return spectrum;
