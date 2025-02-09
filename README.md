@@ -2,7 +2,7 @@
 
 Simple audio recording with audio spectrum, similar to WeChat
 
-##How to use
+## How to use
 ```objective-c
 
 - (void)viewDidLoad {
@@ -36,3 +36,5 @@ Simple audio recording with audio spectrum, similar to WeChat
 }
 
 ```
+
+![Example](https://github.com/SixtyTwoPlus/ZHAudioRecord/blob/main/Example.gif "Example")
