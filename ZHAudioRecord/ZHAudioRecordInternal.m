@@ -217,7 +217,7 @@
         status = self.displayView.isCancel ? ZHRecordFinishStatusCancel : ZHRecordFinishStatusSuccess;
     }
     if (self.delegate && [self.delegate respondsToSelector:@selector(audioRecord:didFinishRecordWithUrlPath:duration:status:)]) {
-        [self.delegate audioRecord:self didFinishRecordWithUrlPath:recorder.url.path duration:self.recordTime status:status];
+        [self.delegate audioRecord:self didFinishRecordWithUrlPath:recorder.url.path duration:(self.recordTime / 10.0) status:status];
     }
 }
 
