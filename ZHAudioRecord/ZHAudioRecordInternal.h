@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol ZHAudioRecordDelegate <NSObject>
 
-- (void)audioRecord:(ZHAudioRecord *)record didFinishRecordWithUrlPath:(NSString *)urlPath status:(ZHRecordFinishStatus)status;
+- (void)audioRecord:(ZHAudioRecord *)record didFinishRecordWithUrlPath:(NSString *)urlPath duration:(NSTimeInterval)duration status:(ZHRecordFinishStatus)status;
 
 - (void)audioRecord:(ZHAudioRecord *)record didErrored:(NSError *)error;
 
